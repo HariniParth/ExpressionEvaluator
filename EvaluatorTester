@@ -1,0 +1,256 @@
+package evaluatortester;
+import java.util.*;
+
+class EvaluatorTester
+{
+    public static void main(String args[]) 
+    {
+        for(String s:args)
+        {
+            Evaluator Calc=new Evaluator(); //Creation of new object of the class Evaluator
+            System.out.println(s+"="+Calc.eval(s)); //calling the eval method
+        }
+    }
+
+    static void main(String q) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+}
+
+class Evaluator
+{
+    Stack<Integer> opdstack=new Stack<Integer>(); //Integer stack for storing Operands
+    Stack<String> oprstack=new Stack<String>(); //String stack for storing operators
+    private static final HashMap <String,Operator> hm=new HashMap<String,Operator>(); //key-value pair (String-Operator) storage
+    static //declaring them static - their function will not change with instance
+    {
+        hm.put("+",new add());//+ to perform add operation
+        hm.put("-",new sub());//- to perform sub operation
+        hm.put("*",new mul());//* to perform mul operation
+        hm.put("/",new div());/// to perform div operation
+        hm.put("#",new hash());//# bogus operator with priority assigned - to perform initial priority checks
+        hm.put("!",new bogus());//! bogus operator - to flush out the contents of the operator stack
+        
+    }
+    int eval(String s) 
+    {
+        StringBuilder sb=new StringBuilder(s);
+        sb.append("!");
+        String t=sb.toString();
+        String st;
+        oprstack.push("#");//pushing # operator at the beginning (bottom) of the stack to perform comparison with the first operator to be passed
+        String delimiters="+-*/()#! ";//delimiters specifying the position which separates 2 tokens (or numbers) from each other
+        StringTokenizer str=new StringTokenizer(t,delimiters,true);//split the string into tokens (for individual consideration). "True" indicates that the delimiters are considered valid token as well
+        System.out.println(t);
+        while(str.hasMoreTokens())//checking if there are any more tokens in the string to be scanned
+        {
+            if(!(st=str.nextToken()).equals(" "))//filters out spaces
+            {////each individual token is stored as a string for computation
+                if(Operand.check(st))//checking if the token passed is an integer
+            {
+                int x=Operand.getValue(st);//obtaining the integer value of operand
+                opdstack.push(x); //pushing the integer onto the operand stack
+                System.out.println(opdstack);
+            }
+                
+                    else if(Operator.check(st))//checking if the string passed is an operator
+                    {
+                    String m=oprstack.peek();//storing the value on top of the operator stack without popping it out
+                    if(!(m.equals("("))){
+                    Operator oldopr=hm.get(m);//using Hashmap key we refer to a Operator
+                    Operator newopr=hm.get(st);
+                    while(oldopr.priority()>=newopr.priority())//Verifying if the priority of operator on top of the stack is higher than that of the new operator
+                    {
+                        String k=oprstack.pop(); //popping the top-of-stack operator
+                        Operator opr=hm.get(k);//using Hashmap key we refer to a Operator
+                        int op2=opdstack.pop(); //popping operand 2 (top-of-stack operand)
+                        int op1=opdstack.pop(); //popping operand 1(new top-of-stack operand)
+                        opdstack.push(opr.execute(op1,op2)); //passing the execute method to perform the required operation on the given operands
+                        System.out.println(opdstack);
+                        System.out.println(oprstack);
+                        String p=oprstack.peek();
+                        oldopr=hm.get(p);
+                    }}//In this while loop, we recurrsively check if the existing operator on the stack has a higher priority than the new one
+                    //when '!' is obtained, it clears up the operator stack by popping out the operators one-by-one
+                    oprstack.push(st);
+                    System.out.println(oprstack);
+                    }
+                    
+            else if(LParen.check(st))
+                        {
+                            oprstack.push(st);
+                        }
+
+             else if(RParen.check(st))
+                        {
+                           if(oprstack.peek().equals("("))
+                        {
+                            oprstack.pop();
+                        } else 
+                           {
+                            String k=oprstack.pop();
+                            Operator opr=hm.get(k);
+                            int op2=opdstack.pop();
+                            int op1=opdstack.pop();
+                            opdstack.push(opr.execute(op1,op2));
+                           }
+                           oprstack.pop();
+                        }
+                
+                /*    else if((st=str.nextToken()).equals(")"))
+                    {
+                        if(oprstack.peek().equals("("))
+                        {
+                            oprstack.pop();
+                        }
+                        else { while(!(oprstack.peek().equals("(")))
+                        {
+                            String k=oprstack.pop();
+                            Operator opr=hm.get(k);
+                            int op2=opdstack.pop();
+                            int op1=opdstack.pop();
+                            opdstack.push(opr.execute(op1,op2));
+                        }
+                        oprstack.pop();
+                    } */
+                }
+        }
+        return opdstack.peek();
+
+}}
+class LParen
+{
+    static boolean check(String s)
+    {
+        if((s.equals("(")))
+            return true;
+        return false;
+    }
+}
+class RParen
+{
+    static boolean check(String s)
+    {
+        if((s.equals(")")))
+            return true;
+        return false;
+    }
+}
+abstract class Operator// Giving a prototype for individual operators
+{
+    abstract int execute(int op1,int op2);
+    abstract int priority();
+    static boolean check(String s)//checking if the strings passed is an operator
+    {
+        if((s.equals("+"))||(s.equals("-"))||(s.equals("*"))||(s.equals("/"))||(s.equals("#"))||(s.equals("!")))
+            return true;
+        return false;
+    }
+}
+ class add extends Operator
+ {
+  int execute(int opd1,int opd2)//performing add operation and returing the value
+  {
+   return(opd1+opd2);
+  }
+  int priority()//setting level of priority as 2 (second highest)
+  {
+   return 2;
+  }
+ }
+ class sub extends Operator
+ {
+  int execute(int opd1,int opd2)//performing sub operation and returing the value
+  {
+   return (opd1-opd2);
+  }
+  int priority()//setting level of priority as 2 (second highest)
+  {
+   return 2;
+  }
+ }
+ class mul extends Operator
+ {
+  int execute(int opd1,int opd2)//performing mul operation and returing the value
+  {
+   return (opd1*opd2);
+  }
+  int priority()//setting level of priority as 3 (first highest)
+ {
+  return 3;
+ }
+}
+class div extends Operator
+{
+ int execute(int opd1,int opd2)//performing div operation and returing the value
+ {
+  return (opd1/opd2);
+ }
+ int priority()//setting level of priority as 3 (first highest)
+ {
+  return 3;
+ }
+}
+class hash extends Operator
+{
+    int priority()//setting level of priority as 0 (lowest)
+    {
+        return 0;
+    }
+    int execute(int op1, int op2)
+    {
+        return 0;
+    }
+}
+class bogus extends Operator
+{
+    int priority()//setting level of priority as 1 (second lowest)
+    {
+        return 1;
+    }
+    int execute(int op1, int op2)
+    {
+        return 0;
+    }
+}
+/*
+class lparen extends Operator
+{
+    int priority()//setting level of priority as 1 (second lowest)
+    {
+        return 4;
+    }
+    int execute(int op1, int op2)
+    {
+        return 0;
+    }
+} */
+class Operand
+{
+    private static int opd;
+    static boolean check(String s)//Verifying if the string passed is an integer
+    {
+        try
+        {
+            int r=Integer.parseInt(s);
+        }
+        catch (NumberFormatException e)
+        {
+            return false;
+        }
+        return true;
+    }
+    Operand(String s)
+    {
+        opd=Integer.parseInt(s);
+    }
+    Operand(int opd)
+    {
+        this.opd=opd;//refering to this object in the given class
+    }
+    static int getValue(String s)//Returns the Integer value of the operand
+    {
+        opd=Integer.parseInt(s);
+        return opd;
+    }
+}
